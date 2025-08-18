@@ -8,7 +8,7 @@ param(
 # Load configuration
 $configPath = "backup-config.json"
 if (!(Test-Path $configPath)) {
-  Write-Error "Config file not found: $configPath"
+  Write-Error "Config file not found: $configPath. If help is required, call Sam Williamson on 04XX XXX XXX, citing the message above."
   exit 1
 }
 $config = Get-Content $configPath | ConvertFrom-Json
@@ -19,7 +19,7 @@ $maxBackups = if ($config.MaxBackups) { [int]$config.MaxBackups } else { 10 }
 
 function Run-Backup {
   if (!(Test-Path $sourceDir)) {
-    Write-Error "Source directory does not exist: $sourceDir"
+    Write-Error "Source directory does not exist: $sourceDir. If help is required, call Sam Williamson on 04XX XXX XXX, citing the message above."
     exit 1
   }
 
@@ -27,8 +27,8 @@ function Run-Backup {
   $backupDrive = (Get-Item -Path $backupDir -ErrorAction SilentlyContinue)?.PSDrive
 
   if (-not $backupDrive) {
-    Write-Warning "Backup drive not found: $backupDir"
-    Write-Warning "Backup aborted. (Is the external HDD connected?)"
+    Write-Warning "Backup drive not found: $backupDir. If help is required, call Sam Williamson on 04XX XXX XXX, citing the message above."
+    Write-Warning "Backup aborted. (Is the external HDD connected?). If help is required, call Sam Williamson on 04XX XXX XXX, citing the message above."
     exit 1
   }
 
@@ -37,7 +37,6 @@ function Run-Backup {
     Write-Output "Creating backup folder: $backupDir"
     New-Item -ItemType Directory -Force -Path $backupDir | Out-Null
   }
-
 
   $timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
   $backupFile = Join-Path $backupDir ("Backup-$timestamp.zip")
@@ -53,7 +52,7 @@ function Run-Backup {
     Write-Output "Backup completed: $backupFile"
   }
   catch {
-    Write-Error "Backup failed: $_"
+    Write-Error "Backup failed: $_. If help is required, call Sam Williamson on 04XX XXX XXX, citing the message above."
     exit 1
   }
 
@@ -67,7 +66,7 @@ function Run-Backup {
         Write-Output "Deleted old backup: $($file.Name)"
       }
       catch {
-        Write-Warning "Failed to delete $($file.FullName): $_"
+        Write-Warning "Failed to delete $($file.FullName): $_. If help is required, call Sam Williamson on 04XX XXX XXX, citing the message above."
       }
     }
   }
@@ -103,7 +102,7 @@ function Register-BackupTask {
       $trigger = New-ScheduledTaskTrigger -Once -At (Get-Date).Date.AddHours($hour) -RepetitionInterval (New-TimeSpan -Hours 1) -RepetitionDuration ([TimeSpan]::MaxValue)
     }
     default {
-      throw "Unsupported frequency: $($config.Schedule.Frequency)"
+      throw "Unsupported frequency: $($config.Schedule.Frequency). If help is required, call Sam Williamson on 04XX XXX XXX, citing the message above."
     }
   }
 
