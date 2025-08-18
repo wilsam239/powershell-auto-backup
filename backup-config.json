@@ -1,0 +1,10 @@
+{
+  "SourceDirectory": "C:\\Users\\Sam\\Documents",
+  "BackupDirectory": "D:\\Backups",
+  "MaxBackups": 10,
+  "Schedule": {
+    "Enabled": true,
+    "Frequency": "Daily", 
+    "Time": "02:00" 
+  }
+}
