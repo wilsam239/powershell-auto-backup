@@ -22,14 +22,19 @@ function Run-Backup {
     Write-Error "Source directory does not exist: $sourceDir. If help is required, call Sam Williamson on 04XX XXX XXX, citing the message above."
     exit 1
   }
-
-  # Check if backup drive is available
-  $backupDrive = (Get-Item -Path $backupDir -ErrorAction SilentlyContinue)?.PSDrive
+ 
+  # Check if backup drive is available (compatible with PowerShell 5.1)
+  try {
+      $item = Get-Item -Path $backupDir -ErrorAction Stop
+      $backupDrive = $item.PSDrive
+  } catch {
+      $backupDrive = $null
+  }
 
   if (-not $backupDrive) {
-    Write-Warning "Backup drive not found: $backupDir. If help is required, call Sam Williamson on 04XX XXX XXX, citing the message above."
-    Write-Warning "Backup aborted. (Is the external HDD connected?). If help is required, call Sam Williamson on 04XX XXX XXX, citing the message above."
-    exit 1
+      Write-Warning "Backup drive not found: $backupDir. If help is required, call Sam Williamson on 04XX XXX XXX, citing the message above."
+      Write-Warning "Backup aborted. (Is the external HDD connected?). If help is required, call Sam Williamson on 04XX XXX XXX, citing the message above."
+      exit 1
   }
 
   # Create backup directory if only subfolder is missing
@@ -81,7 +86,17 @@ function Register-BackupTask {
   }
 
   $taskName = "AutomatedBackupScript"
-  $scriptPath = (Resolve-Path $MyInvocation.MyCommand.Path).Path
+
+  # Safer script path detection
+  if ($PSCommandPath) {
+      $scriptPath = $PSCommandPath
+  } elseif ($MyInvocation.MyCommand.Path) {
+      $scriptPath = (Resolve-Path $MyInvocation.MyCommand.Path).Path
+  } else {
+      $scriptPath = (Get-Location).Path
+      Write-Warning "Could not detect script path reliably, using current directory: $scriptPath"
+  }
+
   $timeParts = $config.Schedule.Time -split "[:]"
   $hour = [int]$timeParts[0]
   $minute = [int]$timeParts[1]
@@ -99,20 +114,33 @@ function Register-BackupTask {
       $trigger = New-ScheduledTaskTrigger -Weekly -At ([datetime]::Today.AddHours($hour).AddMinutes($minute).TimeOfDay)
     }
     "Hourly" {
-      $trigger = New-ScheduledTaskTrigger -Once -At (Get-Date).Date.AddHours($hour) -RepetitionInterval (New-TimeSpan -Hours 1) -RepetitionDuration ([TimeSpan]::MaxValue)
+      $trigger = New-ScheduledTaskTrigger -Once -At (Get-Date).Date.AddHours($hour) `
+                 -RepetitionInterval (New-TimeSpan -Hours 1) `
+                 -RepetitionDuration (New-TimeSpan -Days 3650)  # 10 years
     }
     default {
       throw "Unsupported frequency: $($config.Schedule.Frequency). If help is required, call Sam Williamson on 04XX XXX XXX, citing the message above."
     }
   }
 
-  $action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-NoProfile -ExecutionPolicy Bypass -File `"$scriptPath`""
+  $action = New-ScheduledTaskAction -Execute "powershell.exe" `
+             -Argument "-NoProfile -ExecutionPolicy Bypass -File `"$scriptPath`""
+
   Register-ScheduledTask -TaskName $taskName -Trigger $trigger -Action $action -RunLevel Highest -Force
 
   Write-Output "Scheduled task '$taskName' created. Runs $($config.Schedule.Frequency) at $($config.Schedule.Time)."
 }
 
+function Ensure-Admin {
+    $currentUser = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
+    if (-not $currentUser.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+        Write-Error "This operation requires Administrator privileges. Right-click PowerShell and select 'Run as administrator'."
+        exit 1
+    }
+}
+
 if ($SetupSchedule) {
+  Ensure-Admin
   Register-BackupTask -configPath $configPath
 }
 else {
