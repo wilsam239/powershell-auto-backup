@@ -1,10 +1,12 @@
 {
-  "SourceDirectory": "C:\\Users\\Sam\\Documents",
-  "BackupDirectory": "D:\\Backups",
+  "SourceDirectory": "C:\\Users\\Samjoo\\Documents\\powershell-auto-backup-main",
+  "BackupDirectory": "C:\\Users\\Samjoo\\Documents\\backups",
   "MaxBackups": 10,
+  "Incremental": true,
+  "lastBackupDate": "2025-08-26T11:07:16",
   "Schedule": {
     "Enabled": true,
-    "Frequency": "Daily", 
-    "Time": "02:00" 
+    "Frequency": "Daily",
+    "Time": "02:00"
   }
 }
